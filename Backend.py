@@ -14,16 +14,21 @@ class Backend:
             if key == "up" and prev_key != "down":
                 new_row = row - 1
                 new_col = col
+                snake_loc.append((new_row, new_col))
             elif key == "down" and prev_key != "up":
                 new_row = row + 1
                 new_col = col
+                snake_loc.append((new_row, new_col))
             elif key == "left" and prev_key != "right":
                 new_row = row
                 new_col = col - 1
+                snake_loc.append((new_row, new_col))
             elif key == "right" and prev_key != "left":
                 new_row = row
                 new_col = col + 1
-            snake_loc.append((new_row, new_col))
+                snake_loc.append((new_row, new_col))
+            else:
+                return snake_loc
         if (new_row, new_col) not in apple_loc_set:
             # Duplicate last location so that when next move happens, snake is same length
             snake_loc.pop(0)
