@@ -26,7 +26,6 @@ def main():
 
     #initiate intro screen of the game
     display.print_screen(width, length, obstacle_loc, apple_loc, snake_loc)
-
     #keyboard.on_press(pressed)
 
     while b.check_if_snake_lives(snake_loc, obstacle_loc, width, length):
@@ -40,7 +39,10 @@ def main():
                 apple_loc = b.generate_apple(snake_loc, obstacle_loc, apple_loc, width, length)
 
         b.cls()
+        print("snake_loc", snake_loc)
+        print("apple_loc", apple_loc)
         display.print_screen(width, length, obstacle_loc, apple_loc, snake_loc)
+
 
 # check
 if __name__ == "__main__":
