@@ -1,64 +1,77 @@
 import keyboard
-from Screen import Screen
-from Backend import Backend
-from time import time
+import Screen
+import Backend
 import time
+from threading import Lock
 
 class State:
     def __init__(self, width, length):
+        self.level = 1
         self.width = width
         self.length = length
         obs_number = 3
         self.prev_key = "right"
-        b = Backend()
-        self.obstacle_loc = b.generate_obstacle(width, length, obs_number)
-        self.snake_loc = b.generate_first_snake(self.obstacle_loc, width, length)
+        self.obstacle_loc = Backend.generate_obstacle(width, length, obs_number)
+        self.snake_loc = Backend.generate_first_snake(self.obstacle_loc, width, length)
         apple_number = 2
         self.apple_loc = []
         for _ in range(apple_number):
-            self.apple_loc = b.generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, width, length)
+            self.apple_loc = Backend.generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, width, length)
         self.was_pressed = False
+        self.lock = Lock()
+        self.points = 0
 
-def move_snake(key, state):
-    b = Backend()
-    state.snake_loc = b.update_snake(key, state.prev_key, state.snake_loc, state.apple_loc)
+    def move_snake(self, key):
+        """Move snake to the new position"""
+        self.snake_loc = Backend.update_snake(key, self.prev_key, self.snake_loc, self.apple_loc)
 
-    for apple in state.apple_loc:
-        if b.check_if_apple_eaten(state.snake_loc, state.apple_loc):
-            state.apple_loc.remove(apple)
-            state.apple_loc = b.generate_apple(state.snake_loc, state.obstacle_loc, state.apple_loc, state.width,
-                                               state.length)
-    b.cls()
-    state.prev_key = key
-    display = Screen()
-    display.print_screen(state.width, state.length, state.obstacle_loc, state.apple_loc, state.snake_loc)
+        for apple in self.apple_loc:
+            if Backend.check_if_apple_eaten(self.snake_loc, apple):
+                self.apple_loc.remove(apple)
+                self.apple_loc = Backend.generate_apple(
+                    self.snake_loc, self.obstacle_loc, self.apple_loc, self.width, self.length)
+                self.points = self.count_points(self.points, self.level)
+                self.level = self.update_level(self.points, self.level)
+
+        Backend.cls()
+        Screen.print_screen(self.width, self.length, self.obstacle_loc, self.apple_loc, self.snake_loc)
+        print("Number of points:", self.points, " | level:", self.level)
+        self.prev_key = key
+
+    def count_points(self, points, level):
+        points += level
+        return points
+
+    def update_level(self, points, level):
+        if points % 12 == 0:
+            level += 1
+        return level
 
 def pressed_callback(event, state):
-    key = event.name
-    state.was_pressed = True
-    move_snake(key, state)
+    """Called on every key press"""
+    with state.lock:
+        key = event.name
+        state.was_pressed = True
+        state.move_snake(key)
 
 def main():
-    #setup game parameters
-    display = Screen()
-    b = Backend()
-    prev_key = None
     width = 50
     length = 10
     state = State(width, length)
 
     #initiate intro screen of the game
-    display.print_screen(width, length, state.obstacle_loc, state.apple_loc, state.snake_loc)
+    Screen.print_screen(width, length, state.obstacle_loc, state.apple_loc, state.snake_loc)
     keyboard.on_press(lambda event: pressed_callback(event, state))
 
-    while b.check_if_snake_lives(state.snake_loc, state.obstacle_loc, width, length):
-        time.sleep(0.5)
-        if state.was_pressed:
-            state.was_pressed = False
-            continue
-        move_snake(state.prev_key, state)
+    while Backend.check_if_snake_lives(state.snake_loc, state.obstacle_loc, width, length):
+        time.sleep(0.5 / state.level)
+        with state.lock:
+            if state.was_pressed:
+                state.was_pressed = False
+                continue
+            state.move_snake(state.prev_key)
+    print(f"Game over | Points: {state.points}, Level: {state.level}")
 
-# check
 if __name__ == "__main__":
     main()
 
