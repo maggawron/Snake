@@ -1,6 +1,5 @@
 '''Use pygame for snake development'''
 import random
-import os
 
 def update_snake(key, prev_key, snake_loc, apple_loc):
     """Get a previous location of a snake and return the next one"""
@@ -81,9 +80,6 @@ def _random_generator(width, length):
     los_row = random.randrange(2, length - 1)
     los_col = random.randrange(2, width - 1)
     return los_row, los_col
-
-def cls():
-    os.system('cls' if os.name == 'nt' else 'clear')
 
 def tests():
     pass

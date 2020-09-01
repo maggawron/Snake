@@ -1,3 +1,10 @@
+import os
+
+
+def cls():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
 def print_screen(width, length, obstacle_loc, apple_loc, snake_loc):
     """Print current state of the game"""
     border_sign = "$"
@@ -9,7 +16,8 @@ def print_screen(width, length, obstacle_loc, apple_loc, snake_loc):
     obstacle_loc_set = set(obstacle_loc)
     apple_loc_set = set(apple_loc)
 
-    #Print screen line by line
+    cls()
+    # Print screen line by line
     for row_id in range(length):
         for col_id in range(width):
             if row_id == 0 or col_id == 0 or row_id == length - 1 or col_id == width - 1:
@@ -22,6 +30,6 @@ def print_screen(width, length, obstacle_loc, apple_loc, snake_loc):
                 print(apple_sign, end="")
             else:
                 print(" ", end="")
-            #End a line
+            # End a line
             if col_id == width - 1:
                 print("")
