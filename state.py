@@ -2,13 +2,14 @@ import Screen
 import Backend
 from threading import Lock
 
+
 # TODO: Probably need to modify main in manual game to use generate_game method to initialize game to cut double code
 class State:
     def __init__(self, width, length):
         self.level = 1
         self.width = width
         self.length = length
-        obs_number = 3
+        obs_number = 0
         self.prev_key = "right"
         self.obstacle_loc = Backend.generate_obstacle(width, length, obs_number)
         self.snake_loc = Backend.generate_first_snake(self.obstacle_loc, width, length)
@@ -23,19 +24,21 @@ class State:
         self.ate_apple = False
 
     def generate_game(self):
-        obs_number = 3
+        obs_number = 0
         self.prev_key = "right"
         self.obstacle_loc = Backend.generate_obstacle(self.width, self.length, obs_number)
         self.snake_loc = Backend.generate_first_snake(self.obstacle_loc, self.width, self.length)
-        apple_number = 2
+        apple_number = 10
         self.apple_loc = []
         for _ in range(apple_number):
-            self.apple_loc = Backend.generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.width, self.length)
+            self.apple_loc = Backend.generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.width,
+                                                    self.length)
         self.was_pressed = False
         self.lock = Lock()
         self.points = 0
         self.snake_dead = False
         self.ate_apple = False
+        return self.snake_loc, self.apple_loc, self.obstacle_loc
 
     def move_snake(self, key):
         """Move snake to the new position"""
@@ -59,3 +62,20 @@ class State:
             level += 1
         return level
 
+
+def move_snake(prev_key, key, snake_loc, apple_loc, obstacle_loc, width, length):
+    """ Function for RL"""
+    snake_loc = Backend.update_snake(key, prev_key, snake_loc, apple_loc)
+
+    ate_apple = False
+    for apple in apple_loc:
+        if Backend.check_if_apple_eaten(snake_loc, apple):
+            apple_loc.remove(apple)
+            apple_loc = Backend.generate_apple(
+                snake_loc, obstacle_loc, apple_loc, width, length)
+            ate_apple = True
+            break
+
+    prev_key = key
+
+    return prev_key, snake_loc, ate_apple, apple_loc
