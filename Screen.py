@@ -1,8 +1,9 @@
 import os
-
+import subprocess
 
 def cls():
     os.system('cls' if os.name == 'nt' else 'clear')
+    os.system('clear')
 
 
 def print_screen(width, length, obstacle_loc, apple_loc, snake_loc):
@@ -17,6 +18,7 @@ def print_screen(width, length, obstacle_loc, apple_loc, snake_loc):
     apple_loc_set = set(apple_loc)
 
     cls()
+
     # Print screen line by line
     for row_id in range(length):
         for col_id in range(width):
