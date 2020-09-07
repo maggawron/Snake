@@ -1,6 +1,5 @@
 '''Use pygame for snake development'''
 import random
-from threading import Lock
 
 def _random_generator(width, length):
     los_row = random.randrange(2, length - 1)
@@ -36,36 +35,29 @@ def generate_apple(snake_loc, obstacle_loc, apple_loc, width, length):
     return apple_loc
 
 
-def tests():
-    pass
-
-
 class State:
     def __init__(self, width, length):
         self.level = 1
-        self.width = width
-        self.length = length
-        obs_number = 0
+        self.game_width = width
+        self.game_length = length
+        obs_number = 2
         self.prev_key = "right"
-        self.obstacle_loc = generate_obstacle(width, length, obs_number)
-        self.snake_loc = generate_first_snake(self.obstacle_loc, width, length)
-        apple_number = 2
+        self.obstacle_loc = generate_obstacle(self.game_width, self.game_length, obs_number)
+        self.snake_loc = generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
+        apple_number = 50
         self.apple_loc = []
         for _ in range(apple_number):
-            self.apple_loc = generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, width, length)
-        self.was_pressed = False
-        self.lock = Lock()
+            self.apple_loc = generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
         self.points = 0
-        self.snake_dead = False
         self.ate_apple = False
+        assert self.check_if_snake_lives()
 
     def check_if_snake_lives(self):
         """Return False if snake crashed into obstacle, itself or border"""
         head_row, head_col = self.snake_loc[-1]
-        # print("snake head", head_row, head_col)
-        if head_row == 0 or head_row == self.length - 1:
+        if head_row == 0 or head_row == self.game_length - 1:
             return False
-        if head_col == 0 or head_col == self.width - 1:
+        if head_col == 0 or head_col == self.game_width - 1:
             return False
 
         all_obstacles = set(self.snake_loc[:-1]) | set(self.obstacle_loc)
@@ -81,7 +73,7 @@ class State:
                     "right": "left",
                     "up": "down",
                     "down": "up"}
-
+        assert key in opposite
         # Keep same direction for invalid move order.
         if opposite[key] == self.prev_key:
             key = self.prev_key
@@ -101,12 +93,13 @@ class State:
         if (new_row, new_col) not in apple_loc_set:
             self.snake_loc.pop(0)
 
+        self.ate_apple = False
         # Check if snake ate an apple
         for apple in self.apple_loc:
             if self.snake_loc[-1] == apple:
                 self.apple_loc.remove(apple)
                 self.apple_loc = generate_apple(
-                    self.snake_loc, self.obstacle_loc, self.apple_loc, self.width, self.length)
+                    self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
                 self.points += self.level
                 self.level = self.update_level(self.points, self.level)
                 self.ate_apple = True
@@ -117,3 +110,4 @@ class State:
         if points % 12 == 0:
             level += 1
         return level
+

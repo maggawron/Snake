@@ -7,7 +7,6 @@ from tf_agents.policies import random_tf_policy
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 from tf_agents.trajectories import trajectory
 import Environment
-import Screen
 
 # Define model hyperparameters
 num_iterations = 20000
@@ -21,6 +20,7 @@ log_interval = 100
 
 num_eval_episodes = 10
 eval_interval = 1000
+
 
 def compute_avg_return(environment, policy, num_episodes=10):
     total_return = 0.0
@@ -49,7 +49,6 @@ def collect_step(environment, policy, buffer):
     # Add trajectory to the replay buffer
     buffer.add_batch(traj)
 
-
 def main():
     # Create train and evaluation environments for Tensorflow
     train_py_env = Environment.Environment()
@@ -57,6 +56,7 @@ def main():
 
     eval_py_env = Environment.Environment()
     eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
+
 
     # utils.validate_py_environment(train_py_env, episodes=5)
 
@@ -150,6 +150,11 @@ def main():
         if step % log_interval == 0:
             avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
             print('step = {0}: loss = {1}, Average Return: {2}'.format(step, train_loss, avg_return))
+            with open(f'Eval_data.step{step // log_interval}.txt', 'w') as f:
+                for move in eval_py_env.all_moves:
+                    print(str(move), file=f)
+            eval_py_env.all_moves = []
+
 
 if __name__ == "__main__":
     main()
