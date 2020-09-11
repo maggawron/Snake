@@ -1,5 +1,9 @@
 '''Use pygame for snake development'''
 import random
+import copy
+
+
+# random.seed(42)
 
 def _random_generator(width, length):
     los_row = random.randrange(2, length - 1)
@@ -40,11 +44,11 @@ class State:
         self.level = 1
         self.game_width = width
         self.game_length = length
-        obs_number = 2
+        obs_number = 0
         self.prev_key = "right"
         self.obstacle_loc = generate_obstacle(self.game_width, self.game_length, obs_number)
         self.snake_loc = generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
-        apple_number = 50
+        apple_number = 20 #TODO
         self.apple_loc = []
         for _ in range(apple_number):
             self.apple_loc = generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
@@ -73,7 +77,7 @@ class State:
                     "right": "left",
                     "up": "down",
                     "down": "up"}
-        assert key in opposite
+        assert key in opposite, print(key)
         # Keep same direction for invalid move order.
         if opposite[key] == self.prev_key:
             key = self.prev_key
@@ -91,12 +95,14 @@ class State:
 
         # Keep last element if snake ate an apple
         if (new_row, new_col) not in apple_loc_set:
+            #TODO fix O(n) with deque?
             self.snake_loc.pop(0)
 
         self.ate_apple = False
         # Check if snake ate an apple
         for apple in self.apple_loc:
             if self.snake_loc[-1] == apple:
+                random.seed(42)
                 self.apple_loc.remove(apple)
                 self.apple_loc = generate_apple(
                     self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
@@ -110,4 +116,7 @@ class State:
         if points % 12 == 0:
             level += 1
         return level
+
+stable_state = State(25, 25) #
+state_const = copy.deepcopy(stable_state)
 

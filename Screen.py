@@ -4,6 +4,7 @@ import sys
 
 gridsize = 20
 snake_color = (17, 24, 47)
+head_color = (255, 1, 1)
 apple_color = (223, 163, 49)
 obstacle_color = (150, 150, 150)
 game_width = 25
@@ -35,34 +36,33 @@ def print_move(stan, clock, surface, screen, myfont):
     drawGrid(surface)
     draw(stan, surface)
     screen.blit(surface, (0, 0))
-    text = myfont.render("Score {0}".format(stan.points), 1, (0, 0, 0))
+    text = myfont.render("Score {0}".format(len(stan.snake_loc[:-1])*10), 1, (0, 0, 0))
     screen.blit(text, (5, 10))
     pygame.display.update()
 
 
+def draw_object(surface, obj, color):
+    r = pygame.Rect((obj[1] * gridsize, obj[0] * gridsize), (gridsize, gridsize))
+    pygame.draw.rect(surface, color, r)
+    pygame.draw.rect(surface, (93, 216, 228), r, 1)
+
+
 def draw(state, surface):
-    #TODO refactor
-    for p in state.snake_loc:
-        r = pygame.Rect((p[1] * gridsize, p[0] * gridsize), (gridsize, gridsize))
-        pygame.draw.rect(surface, snake_color, r)
-        pygame.draw.rect(surface, (93, 216, 228), r, 1)
+    for p in state.snake_loc[:-1]:
+        draw_object(surface, p, snake_color)
+    head = state.snake_loc[-1]
+    draw_object(surface, head, head_color)
 
     for l in state.apple_loc:
-        r = pygame.Rect((l[1] * gridsize, l[0] * gridsize), (gridsize, gridsize))
-        pygame.draw.rect(surface, apple_color, r)
-        pygame.draw.rect(surface, (93, 216, 228), r, 1)
+        draw_object(surface, l, apple_color)
 
     for o in state.obstacle_loc:
-        r = pygame.Rect((o[1] * gridsize, o[0] * gridsize), (gridsize, gridsize))
-        pygame.draw.rect(surface, obstacle_color, r)
-        pygame.draw.rect(surface, (93, 216, 228), r, 1)
+        draw_object(surface, o, obstacle_color)
 
     for row in range(int(game_width)):
         for col in range(int(game_length)):
             if row == 0 or row == game_width - 1 or col == 0 or col == game_length - 1:
-                r = pygame.Rect((col * gridsize, row * gridsize), (gridsize, gridsize))
-                pygame.draw.rect(surface, obstacle_color, r)
-                pygame.draw.rect(surface, (93, 216, 228), r, 1)
+                draw_object(surface, (col, row), obstacle_color)
 
 
 def handle_keys():
@@ -93,8 +93,8 @@ def drawGrid(surface):
                 pygame.draw.rect(surface, (84, 194, 205), rr)
 
 def main():
-    for i in range(1, 5):
-        filepath = rf"C:\Users\ibm\PycharmProjects\Snake\Eval_data.step{i}.txt"
+    for i in range(1, 12):
+        filepath = rf"C:\Users\ibm\PycharmProjects\Snake\eval_data\Eval_data.step{i}.txt"
         print("Step: ", i)
         print_all(filepath)
 

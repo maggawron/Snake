@@ -7,15 +7,17 @@ from tf_agents.policies import random_tf_policy
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 from tf_agents.trajectories import trajectory
 import Environment
+import os
+
 
 # Define model hyperparameters
 num_iterations = 20000
 initial_collect_steps = 1000
-collect_steps_per_iteration = 10
+collect_steps_per_iteration = 20 #TODO
 replay_buffer_max_length = 100000
 
-batch_size = 64
-learning_rate = 3e-4
+batch_size = 32
+learning_rate = 5e-3
 log_interval = 100
 
 num_eval_episodes = 10
@@ -49,6 +51,11 @@ def collect_step(environment, policy, buffer):
     # Add trajectory to the replay buffer
     buffer.add_batch(traj)
 
+
+def collect_data(env, policy, buffer, steps):
+    for _ in range(steps):
+        collect_step(env, policy, buffer)
+
 def main():
     # Create train and evaluation environments for Tensorflow
     train_py_env = Environment.Environment()
@@ -62,11 +69,13 @@ def main():
 
     # Set up an agent
     # Decide on layers of a network
-    fc_layer_params = (500, 1000, 256, 100, 20, 3)
-
+    fc_layer_params = (50, 200, 25, 6)
+    #conv_layer_params = [(4, 4, 1), (8, 4, 2)]
     # QNetwork predicts QValues (expected returns) for all actions based on observation on the given environment
-    q_net = q_network.QNetwork(train_env.observation_spec(), train_env.action_spec(), fc_layer_params=fc_layer_params)
-
+    q_net = q_network.QNetwork(train_env.observation_spec(),
+                               train_env.action_spec(),
+                               #conv_layer_params=conv_layer_params,
+                               fc_layer_params=fc_layer_params)
     # Initialize DQN Agent on the train environment steps, actions, QNetwork, Adam Optimizer, loss function & train step counter
     optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate)
 
@@ -79,8 +88,11 @@ def main():
         train_env.action_spec(),
         q_network=q_net,
         optimizer=optimizer,
+        epsilon_greedy=0.4,  #TODO tune this
         td_errors_loss_fn=common.element_wise_squared_loss,
-        train_step_counter=train_step_counter)
+        train_step_counter=train_step_counter,
+        #boltzmann_temperature=0.1,
+        summarize_grads_and_vars=True)
 
     agent.initialize()
 
@@ -111,7 +123,8 @@ def main():
     replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
         data_spec=agent.collect_data_spec,
         batch_size=1,
-        max_length=replay_buffer_max_length)
+        max_length=replay_buffer_max_length,
+        dataset_window_shift=1)
 
     # The agent needs access to the replay buffer.
     # This is provided by creating an iterable tf.data.Dataset pipeline which will feed data to the agent.
@@ -129,12 +142,12 @@ def main():
 
     # Train the agent
 
+    agent.train = common.function(agent.train)
+
     # Reset the train step
     agent.train_step_counter.assign(0)
 
-    # Evaluate the agent's policy once before training.
-    avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
-    returns = [avg_return]
+    collect_data(train_env, random_policy, replay_buffer, steps=10000)
 
     for _ in range(num_iterations):
 
@@ -148,12 +161,15 @@ def main():
 
         step = agent.train_step_counter.numpy()
         if step % log_interval == 0:
-            avg_return = compute_avg_return(eval_env, agent.policy, num_eval_episodes)
-            print('step = {0}: loss = {1}, Average Return: {2}'.format(step, train_loss, avg_return))
-            with open(f'Eval_data.step{step // log_interval}.txt', 'w') as f:
+            avg_return = compute_avg_return(eval_env, agent.policy, 3) #TODO
+            if not os.path.exists("eval_data"):
+                os.makedirs("eval_data")
+            path = os.path.join("eval_data", f'Eval_data.step{step // log_interval}.txt')
+            with open(path, 'w') as f:
                 for move in eval_py_env.all_moves:
                     print(str(move), file=f)
             eval_py_env.all_moves = []
+            print('step = {0}: loss = {1}, Average Return: {2}'.format(step, train_loss, avg_return))
 
 
 if __name__ == "__main__":
