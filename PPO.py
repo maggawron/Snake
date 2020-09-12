@@ -1,10 +1,12 @@
+#from multiprocessing import set_start_method
+#set_start_method("spawn")
 
+import tf_agents
 import tensorflow as tf
 from tf_agents.agents.ppo import ppo_agent
 from tf_agents.drivers import dynamic_episode_driver
 from tf_agents.environments import parallel_py_environment
 from tf_agents.environments import tf_py_environment
-from tf_agents.environments import wrappers
 
 from tf_agents.metrics import tf_metrics
 from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
@@ -22,7 +24,7 @@ import Environment
 # Define model hyperparameters
 num_environment_steps = 30000000
 collect_episodes_per_iteration = 32
-num_parallel_environments = 1  # TODO should be 32
+num_parallel_environments = 32
 replay_buffer_capacity = 501  # Per-environment
 # Params for train
 num_epochs = 25
@@ -51,19 +53,8 @@ def main():
     tf.compat.v1.enable_v2_behavior()
     # Create train and evaluation environments for Tensorflow
     train_py_env = Environment.Environment()
-    # train_env = tf_py_environment.TFPyEnvironment(parallel_py_environment.ParallelPyEnvironment([Environment.Environment] * num_parallel_environments))
-    train_env = tf_py_environment.TFPyEnvironment(train_py_env)
-
-    class FixedClipperWrapper(wrappers.ActionClipWrapper):
-        def __init__(self, env):
-            self._reward_spec = env.reward_spec()
-            super().__init__(env)
-
-        def reward_spec(self):
-            return self._reward_spec
-
-    # train_env = wrappers.ActionClipWrapper(train_env)
-    train_env = FixedClipperWrapper(train_env)
+    train_env = tf_py_environment.TFPyEnvironment(parallel_py_environment.ParallelPyEnvironment([Environment.Environment] * num_parallel_environments))
+    #train_env = tf_py_environment.TFPyEnvironment(train_py_env)
 
     eval_py_env = Environment.Environment()
     eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
@@ -75,7 +66,7 @@ def main():
     actor_net = ActorDistributionRnnNetwork(
         input_tensor_spec=train_env.observation_spec(),
         output_tensor_spec=train_env.action_spec(),
-        conv_layer_params=[(16, 8, 4), (32, 4, 2)],
+        conv_layer_params=[(3, 4, 1), (10, 8, 2), (5, 8, 2)],
         input_fc_layer_params=(256,),
         lstm_size=(256,),
         output_fc_layer_params=(128,),
@@ -83,7 +74,7 @@ def main():
 
     value_net = ValueRnnNetwork(
         input_tensor_spec=train_env.observation_spec(),
-        conv_layer_params=[(16, 8, 4), (32, 4, 2)],
+        conv_layer_params=[(3, 4, 1), (10, 8, 2), (5, 8, 2)],
         input_fc_layer_params=(256,),
         lstm_size=(256,),
         output_fc_layer_params=(128,),
@@ -147,4 +138,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    tf_agents.system.multiprocessing.handle_main(main)

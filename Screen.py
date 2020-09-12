@@ -93,7 +93,7 @@ def drawGrid(surface):
                 pygame.draw.rect(surface, (84, 194, 205), rr)
 
 def main():
-    for i in range(1, 12):
+    for i in range(123, 130):
         filepath = rf"C:\Users\ibm\PycharmProjects\Snake\eval_data\Eval_data.step{i}.txt"
         print("Step: ", i)
         print_all(filepath)

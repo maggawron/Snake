@@ -47,8 +47,9 @@ class State:
         obs_number = 0
         self.prev_key = "right"
         self.obstacle_loc = generate_obstacle(self.game_width, self.game_length, obs_number)
-        self.snake_loc = generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
-        apple_number = 20 #TODO
+        #self.snake_loc = generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
+        self.snake_loc = [(12, 13)] #TODO snake begins in the middle of the field
+        apple_number = 50 #TODO
         self.apple_loc = []
         for _ in range(apple_number):
             self.apple_loc = generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)

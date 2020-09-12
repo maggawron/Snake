@@ -1,4 +1,8 @@
+#from multiprocessing import set_start_method
+#set_start_method("spawn")
+
 import numpy as np
+import tf_agents
 from tf_agents.environments import py_environment
 from tf_agents.specs import array_spec
 from tf_agents.trajectories import time_step as ts
@@ -43,8 +47,11 @@ class Environment(py_environment.PyEnvironment):
         self.distance_to_apple = self.cal_dist_to_apple()
 
     def cal_dist_to_apple(self):
-        #print("Snake distance to apple:", math.sqrt((self.stan.snake_loc[-1][0] - self.stan.apple_loc[0][0]) ** 2 + (self.stan.snake_loc[-1][1] - self.stan.apple_loc[0][1]) ** 2))
-        return math.sqrt((self.stan.snake_loc[-1][0] - self.stan.apple_loc[0][0]) ** 2 + (self.stan.snake_loc[-1][1] - self.stan.apple_loc[0][1]) ** 2)
+        for apple in self.stan.apple_loc:
+            min_dist = math.sqrt(self.length ** 2 + self.width ** 2)
+            distance = math.sqrt((self.stan.snake_loc[-1][0] - apple[0]) ** 2 + (self.stan.snake_loc[-1][1] - apple[1]) ** 2)
+            min_dist = min(min_dist, distance)
+        return min_dist
 
 
     def reward_spec(self):
@@ -151,7 +158,7 @@ class Environment(py_environment.PyEnvironment):
         prev_dist = self.distance_to_apple
         self.distance_to_apple = self.cal_dist_to_apple()
         self.prev_moves.append(action)
-        if len(self.prev_moves) >= 3:
+        if len(self.prev_moves) >= 4:
             self.prev_moves.pop(0)
 
         if self.episode_ended or self.action_count > 500 or self.moves_from_last_apple > 25:
@@ -163,20 +170,11 @@ class Environment(py_environment.PyEnvironment):
             self.moves_from_last_apple = 0
             self.apple_eaten_count += 1
             return ts.transition(np.array(self.state, dtype=np.float32), reward=30)
-        #if self.distance_to_apple >= prev_dist:
-        #    return ts.transition(np.array(self.state, dtype=np.float32), reward=-1-self.distance_to_apple/10)
-        if len(self.prev_moves) == 3 and self.prev_moves[0] == self.prev_moves[1] == self.prev_moves[2] and self.prev_moves[2] > 0:
+        if len(self.prev_moves) == 4 and self.prev_moves[0] == self.prev_moves[1] == self.prev_moves[2] == self.prev_moves[3] and self.prev_moves[2] > 0:
             return ts.transition(np.array(self.state, dtype=np.float32), reward=-15)
-        #return ts.transition(np.array(self.state, dtype=np.float32), reward=1-self.distance_to_apple/10)
+        """
+        if self.distance_to_apple >= prev_dist:
+            return ts.transition(np.array(self.state, dtype=np.float32), reward=-self.distance_to_apple / 100)
+        return ts.transition(np.array(self.state, dtype=np.float32), reward=1-self.distance_to_apple/100)
+        """
         return ts.transition(np.array(self.state, dtype=np.float32), reward=-0.005)
-
-
-def main():
-    train_py_env = Environment()
-    utils.validate_py_environment(train_py_env, episodes=5)
-
-
-if __name__ == "__main__":
-    main()
-
-
