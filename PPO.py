@@ -31,7 +31,7 @@ num_epochs = 25
 learning_rate = 4e-4
 # Params for eval
 num_eval_episodes = 3
-eval_interval = 50
+eval_interval = 100
 
 
 def evaluate_perf(env, policy, num_episodes):
