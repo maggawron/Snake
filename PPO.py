@@ -1,6 +1,8 @@
 #from multiprocessing import set_start_method
 #set_start_method("spawn")
 
+import time
+import logging
 import tf_agents
 import tensorflow as tf
 from tf_agents.agents.ppo import ppo_agent
@@ -24,7 +26,7 @@ import Environment
 # Define model hyperparameters
 num_environment_steps = 30000000
 collect_episodes_per_iteration = 32
-num_parallel_environments = 32
+num_parallel_environments = 128
 replay_buffer_capacity = 501  # Per-environment
 # Params for train
 num_epochs = 25
@@ -110,16 +112,22 @@ def main():
 
     environment_steps_metric = tf_metrics.EnvironmentSteps()
 
+    collect_time = 0
+    train_time = 0
+    timed_at_step = global_step.numpy()
     # Reset the train step
     agent.train_step_counter.assign(0)
 
     while environment_steps_metric.result() < num_environment_steps:
+        start_time = time.time()
         collect_driver.run()
+        collect_time += time.time() - start_time
 
+        start_time = time.time()
         trajectories = replay_buffer.gather_all()
         total_loss, unused_info = agent.train(experience=trajectories)
-
         replay_buffer.clear()
+        train_time += time.time() - start_time
 
         global_step_val = global_step.numpy()
 
@@ -134,7 +142,14 @@ def main():
                 for move in eval_py_env.all_moves:
                     print(str(move), file=f)
             eval_py_env.all_moves = []
-            print('step = {0}: loss = {1}, Avg return: {2}'.format(global_step_val, total_loss, avg_return))
+            steps_per_sec = ((global_step_val - timed_at_step) / (
+                    collect_time + train_time))
+
+            print(f"step = {global_step_val}: loss = {total_loss}, Avg return: {avg_return}, {steps_per_sec:.3f} steps/sec, collect_time = {collect_time}, train_time = {train_time}")
+
+            timed_at_step = global_step_val
+            collect_time = 0
+            train_time = 0
 
 
 if __name__ == "__main__":

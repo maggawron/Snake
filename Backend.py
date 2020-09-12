@@ -103,7 +103,7 @@ class State:
         # Check if snake ate an apple
         for apple in self.apple_loc:
             if self.snake_loc[-1] == apple:
-                random.seed(42)
+                #random.seed(42)
                 self.apple_loc.remove(apple)
                 self.apple_loc = generate_apple(
                     self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)

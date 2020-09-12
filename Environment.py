@@ -18,8 +18,8 @@ class Environment(py_environment.PyEnvironment):
         self.all_moves = []
         self.length = 25  #TODO
         self.width = 25  #TODO
-        #self.stan = Backend.State(self.width, self.length)
-        self.stan = copy.deepcopy(Backend.state_const) #TODO
+        self.stan = Backend.State(self.width, self.length) #TODO call _reset
+        #self.stan = copy.deepcopy(Backend.state_const) #TODO
 
         # Action is a snake move: 0: forward, 1: left, 2: right
         self._action_spec = array_spec.BoundedArraySpec(
@@ -88,8 +88,8 @@ class Environment(py_environment.PyEnvironment):
 
     # Calls generate_game method from State to initialize a random game from scratch
     def _reset(self):
-        #self.stan = Backend.State(self.width, self.length)
-        self.stan = copy.deepcopy(Backend.state_const) #TODO
+        self.stan = Backend.State(self.width, self.length)
+        #self.stan = copy.deepcopy(Backend.state_const) #TODO
         self.state = self._update_state() #TODO
         self.episode_ended = False
         self.reset_count += 1
@@ -158,7 +158,7 @@ class Environment(py_environment.PyEnvironment):
         prev_dist = self.distance_to_apple
         self.distance_to_apple = self.cal_dist_to_apple()
         self.prev_moves.append(action)
-        if len(self.prev_moves) >= 4:
+        if len(self.prev_moves) > 4:
             self.prev_moves.pop(0)
 
         if self.episode_ended or self.action_count > 500 or self.moves_from_last_apple > 25:
