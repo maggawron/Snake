@@ -1,8 +1,4 @@
-#from multiprocessing import set_start_method
-#set_start_method("spawn")
-
 import time
-import logging
 import tf_agents
 import tensorflow as tf
 from tf_agents.agents.ppo import ppo_agent
@@ -14,72 +10,77 @@ from tf_agents.metrics import tf_metrics
 from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionRnnNetwork
 from tf_agents.networks.value_rnn_network import ValueRnnNetwork
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
+from tf_agents.trajectories.policy_step import PolicyStep
 
 from tensorflow.keras.optimizers import Adam
 
-from tf_agents.trajectories.policy_step import PolicyStep
-
 import os
-
 import Environment
 
 # Define model hyperparameters
-num_environment_steps = 30000000
+num_environment_steps = 3 * 10 ** 7
 collect_episodes_per_iteration = 32
-num_parallel_environments = 128
+num_parallel_environments = 1
 replay_buffer_capacity = 501  # Per-environment
 # Params for train
-num_epochs = 25
+num_epochs = 20
 learning_rate = 4e-4
 # Params for eval
 num_eval_episodes = 3
-eval_interval = 100
+eval_interval = 20
+
+def save_to_file(env, global_step_val, eval_interval):
+    if not os.path.exists("eval_data"):
+        os.makedirs("eval_data")
+    path = os.path.join("eval_data", f'Eval_data.step{global_step_val // eval_interval}.txt')
+    with open(path, 'w') as f:
+        for move in env.all_moves:
+            print(str(move), file=f)
+    env.all_moves = []
 
 
 def evaluate_perf(env, policy, num_episodes):
     for episode in range(num_episodes):
         time_step = env.reset()
         state = policy.get_initial_state(env.batch_size)
-
         total_reward = 0
         while not time_step.is_last():
             policy_step: PolicyStep = policy.action(time_step, state)
             state = policy_step.state
             total_reward += time_step.reward
             time_step = env.step(policy_step.action)
-
     avg_reward = total_reward / num_episodes
     return avg_reward[0]
 
 def main():
     tf.compat.v1.enable_v2_behavior()
     # Create train and evaluation environments for Tensorflow
-    train_py_env = Environment.Environment()
     train_env = tf_py_environment.TFPyEnvironment(parallel_py_environment.ParallelPyEnvironment([Environment.Environment] * num_parallel_environments))
-    #train_env = tf_py_environment.TFPyEnvironment(train_py_env)
 
     eval_py_env = Environment.Environment()
     eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
 
     optimizer = Adam(learning_rate=learning_rate, epsilon=1e-5)
+
     global_step = tf.compat.v1.train.get_or_create_global_step()
+    timed_at_step = global_step.numpy()
 
     # Initialize actor and value networks
     actor_net = ActorDistributionRnnNetwork(
         input_tensor_spec=train_env.observation_spec(),
         output_tensor_spec=train_env.action_spec(),
-        conv_layer_params=[(3, 4, 1), (10, 8, 2), (5, 8, 2)],
-        input_fc_layer_params=(256,),
-        lstm_size=(256,),
-        output_fc_layer_params=(128,),
+        conv_layer_params=[(3, 4, 1), (7, 4, 2), (5, 8, 2)],
+        input_fc_layer_params=(128,),
+        lstm_size=(128,),
+        output_fc_layer_params=(64,),
         activation_fn=tf.nn.elu)
 
     value_net = ValueRnnNetwork(
         input_tensor_spec=train_env.observation_spec(),
-        conv_layer_params=[(3, 4, 1), (10, 8, 2), (5, 8, 2)],
-        input_fc_layer_params=(256,),
-        lstm_size=(256,),
-        output_fc_layer_params=(128,),
+        conv_layer_params=[(3, 4, 1), (7, 4, 2), (5, 8, 2)],
+        input_fc_layer_params=(128,),
+        lstm_size=(128,),
+        output_fc_layer_params=(64,),
         activation_fn=tf.nn.elu)
 
     agent = ppo_agent.PPOAgent(
@@ -99,8 +100,7 @@ def main():
     )
 
     agent.initialize()
-    environment_steps_metric = tf_metrics.EnvironmentSteps()
-    step_metrics = [tf_metrics.NumberOfEpisodes(), environment_steps_metric]
+    step_metrics = [tf_metrics.NumberOfEpisodes(), tf_metrics.EnvironmentSteps()]
 
     replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(agent.collect_data_spec,
                                                                    batch_size=num_parallel_environments,
@@ -114,7 +114,7 @@ def main():
 
     collect_time = 0
     train_time = 0
-    timed_at_step = global_step.numpy()
+
     # Reset the train step
     agent.train_step_counter.assign(0)
 
@@ -130,21 +130,10 @@ def main():
         train_time += time.time() - start_time
 
         global_step_val = global_step.numpy()
-
         if global_step_val % eval_interval == 0:
-
             avg_return = evaluate_perf(eval_env, agent.policy, num_eval_episodes)
-
-            if not os.path.exists("eval_data"):
-                os.makedirs("eval_data")
-            path = os.path.join("eval_data", f'Eval_data.step{global_step_val // eval_interval}.txt')
-            with open(path, 'w') as f:
-                for move in eval_py_env.all_moves:
-                    print(str(move), file=f)
-            eval_py_env.all_moves = []
-            steps_per_sec = ((global_step_val - timed_at_step) / (
-                    collect_time + train_time))
-
+            save_to_file(eval_py_env, global_step_val, eval_interval)
+            steps_per_sec = ((global_step_val - timed_at_step) / (collect_time + train_time))
             print(f"step = {global_step_val}: loss = {total_loss}, Avg return: {avg_return}, {steps_per_sec:.3f} steps/sec, collect_time = {collect_time}, train_time = {train_time}")
 
             timed_at_step = global_step_val

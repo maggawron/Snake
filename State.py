@@ -1,9 +1,8 @@
 '''Use pygame for snake development'''
+#TODO change to State.py
 import random
 import copy
 
-
-# random.seed(42)
 
 def _random_generator(width, length):
     los_row = random.randrange(2, length - 1)
@@ -11,7 +10,7 @@ def _random_generator(width, length):
     return los_row, los_col
 
 
-def generate_obstacle(width, length, obs_number):
+def _generate_obstacle(width, length, obs_number):
     obstacle_loc = []
     for _ in range(obs_number):
         los_row, los_col = _random_generator(width, length)
@@ -19,14 +18,14 @@ def generate_obstacle(width, length, obs_number):
     return obstacle_loc
 
 
-def generate_first_snake(obstacle_loc, width, length):
+def _generate_first_snake(obstacle_loc, width, length):
     los_row, los_col = _random_generator(width, length)
     while (los_row, los_col) in obstacle_loc:
         los_row, los_col = _random_generator(width, length)
     return [(los_row, los_col)]
 
 
-def generate_apple(snake_loc, obstacle_loc, apple_loc, width, length):
+def _generate_apple(snake_loc, obstacle_loc, apple_loc, width, length):
     """If snake ate an apple, generate him another one, but not on obstacle, border, other apple or snake"""
     snake_loc_set = set(snake_loc)
     obstacle_loc_set = set(obstacle_loc)
@@ -40,19 +39,18 @@ def generate_apple(snake_loc, obstacle_loc, apple_loc, width, length):
 
 
 class State:
-    def __init__(self, width, length):
-        self.level = 1
-        self.game_width = width
-        self.game_length = length
+    def __init__(self):
+        self.game_width = 25
+        self.game_length = 25
         obs_number = 0
+        apple_number = 40  # TODO
         self.prev_key = "right"
-        self.obstacle_loc = generate_obstacle(self.game_width, self.game_length, obs_number)
-        #self.snake_loc = generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
-        self.snake_loc = [(12, 13)] #TODO snake begins in the middle of the field
-        apple_number = 50 #TODO
+        self.obstacle_loc = _generate_obstacle(self.game_width, self.game_length, obs_number)
+        #self.snake_loc = _generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
+        self.snake_loc = [(self.game_width//2, self.game_length//2)] #TODO snake begins in the middle of the field
         self.apple_loc = []
         for _ in range(apple_number):
-            self.apple_loc = generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
+            self.apple_loc = _generate_apple(self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
         self.points = 0
         self.ate_apple = False
         assert self.check_if_snake_lives()
@@ -105,19 +103,9 @@ class State:
             if self.snake_loc[-1] == apple:
                 #random.seed(42)
                 self.apple_loc.remove(apple)
-                self.apple_loc = generate_apple(
+                self.apple_loc = _generate_apple(
                     self.snake_loc, self.obstacle_loc, self.apple_loc, self.game_width, self.game_length)
-                self.points += self.level
-                self.level = self.update_level(self.points, self.level)
                 self.ate_apple = True
+                self.points += 10
                 break
         self.prev_key = key
-
-    def update_level(self, points, level):
-        if points % 12 == 0:
-            level += 1
-        return level
-
-stable_state = State(25, 25) #
-state_const = copy.deepcopy(stable_state)
-
