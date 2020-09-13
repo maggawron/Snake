@@ -6,11 +6,9 @@ from State import State
 import copy
 import math
 
-"""Convert snake game into TensorFlow environment"""
-
 
 class Environment(py_environment.PyEnvironment):
-
+    """TensorFlow environment for snake game"""
     def __init__(self):
         self._start_new_game()
 

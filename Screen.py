@@ -57,6 +57,3 @@ class Screen:
                 else:
                     rr = pygame.Rect((x * self.gridsize, y * self.gridsize), (self.gridsize, self.gridsize))
                     pygame.draw.rect(self.surface, Screen.grid2_color, rr)
-
-    # TODO print curent reward of the snake
-    # print(f"Game over | Points: {stan.points} | Level: {stan.level}")

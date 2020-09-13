@@ -1,5 +1,4 @@
 '''Use pygame for snake development'''
-#TODO change to State.py
 import random
 import copy
 
