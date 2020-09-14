@@ -14,7 +14,8 @@ class Screen:
         self.game_length = length
         self.gridsize = 20
     
-        self.game_display = pygame.display.set_mode((self.game_width * self.gridsize, self.game_length * self.gridsize), 0, 32)
+        self.game_display = pygame.display.set_mode(
+            (self.game_width * self.gridsize, self.game_length * self.gridsize), 0, 32)
         self.surface = pygame.Surface(self.game_display.get_size()).convert()
         self._drawGrid()
         self.myfont = pygame.font.SysFont("monospace", 15)

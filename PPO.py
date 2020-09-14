@@ -1,6 +1,7 @@
 import time
 import tf_agents
 import tensorflow as tf
+import sys
 from tf_agents.agents.ppo import ppo_agent
 from tf_agents.drivers import dynamic_episode_driver
 from tf_agents.environments import parallel_py_environment
@@ -11,11 +12,16 @@ from tf_agents.networks.actor_distribution_rnn_network import ActorDistributionR
 from tf_agents.networks.value_rnn_network import ValueRnnNetwork
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 from tf_agents.trajectories.policy_step import PolicyStep
+from tf_agents.policies import policy_saver
 
 from tensorflow.keras.optimizers import Adam
+from tf_agents.utils import common
+
 
 import os
 import Environment
+
+#TODO: Add PolicySaver & save configuration & hyperparameters, deque
 
 # Define model hyperparameters
 num_environment_steps = 3 * 10 ** 7
@@ -28,6 +34,8 @@ learning_rate = 4e-4
 # Params for eval
 num_eval_episodes = 3
 eval_interval = 20
+policy_saver_interval = 2 # 1000
+
 
 def save_to_file(env, global_step_val, eval_interval):
     if not os.path.exists("eval_data"):
@@ -40,19 +48,24 @@ def save_to_file(env, global_step_val, eval_interval):
 
 
 def evaluate_perf(env, policy, num_episodes):
+    total_reward = 0
     for episode in range(num_episodes):
         time_step = env.reset()
         state = policy.get_initial_state(env.batch_size)
-        total_reward = 0
         while not time_step.is_last():
             policy_step: PolicyStep = policy.action(time_step, state)
             state = policy_step.state
-            total_reward += time_step.reward
+            total_reward += time_step.reward[0]
             time_step = env.step(policy_step.action)
     avg_reward = total_reward / num_episodes
-    return avg_reward[0]
+    return avg_reward
+
 
 def main():
+    if len(sys.argv) != 2:
+        raise ValueError(f"Usage: ./{sys.argv[0]} experiment_name")
+    experiment_name = sys.argv[1]
+
     tf.compat.v1.enable_v2_behavior()
     # Create train and evaluation environments for Tensorflow
     train_env = tf_py_environment.TFPyEnvironment(parallel_py_environment.ParallelPyEnvironment([Environment.Environment] * num_parallel_environments))
@@ -118,6 +131,20 @@ def main():
     # Reset the train step
     agent.train_step_counter.assign(0)
 
+    saved_model_dir = os.path.join("saved_models", experiment_name)
+    checkpoint_dir = os.path.join(saved_model_dir, 'checkpoint')
+    train_checkpointer = common.Checkpointer(
+        ckpt_dir=checkpoint_dir,
+        max_to_keep=1,
+        agent=agent,
+        policy=agent.policy,
+        #replay_buffer=replay_buffer,
+        global_step=global_step
+    )
+
+    train_checkpointer.initialize_or_restore()
+    global_step = tf.compat.v1.train.get_global_step()
+
     while environment_steps_metric.result() < num_environment_steps:
         start_time = time.time()
         collect_driver.run()
@@ -135,10 +162,12 @@ def main():
             save_to_file(eval_py_env, global_step_val, eval_interval)
             steps_per_sec = ((global_step_val - timed_at_step) / (collect_time + train_time))
             print(f"step = {global_step_val}: loss = {total_loss}, Avg return: {avg_return}, {steps_per_sec:.3f} steps/sec, collect_time = {collect_time}, train_time = {train_time}")
-
             timed_at_step = global_step_val
             collect_time = 0
             train_time = 0
+
+        if global_step_val % policy_saver_interval == 0:
+            train_checkpointer.save(global_step_val)
 
 
 if __name__ == "__main__":

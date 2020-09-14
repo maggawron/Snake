@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from tf_agents.environments import py_environment
 from tf_agents.specs import array_spec
@@ -20,7 +21,7 @@ class Environment(py_environment.PyEnvironment):
         self._observation_spec = array_spec.BoundedArraySpec(
             shape=(self.stan.game_length, self.stan.game_width, 5,), dtype=np.float32, minimum=0, maximum=1, name='observation')
 
-    def _start_new_game(self):
+    def _start_new_game(self) -> None:
         self.stan = State()
         # self.stan = copy.deepcopy(Backend.state_const)
         self.state = self._update_state()
@@ -29,10 +30,10 @@ class Environment(py_environment.PyEnvironment):
         self.moves_from_last_apple = 0
         self.distance_to_apple = self._cal_dist_to_apple()
         self.all_moves = []
-        self.reward_print = 0
-        self.total_reward = 0
+        self.reward_print: int = 0
+        self.total_reward: int = 0
 
-    def _cal_dist_to_apple(self):
+    def _cal_dist_to_apple(self) -> float:
         min_dist = math.sqrt(self.stan.game_length ** 2 + self.stan.game_width ** 2)
         for apple in self.stan.apple_loc:
             distance = math.sqrt(
@@ -47,7 +48,7 @@ class Environment(py_environment.PyEnvironment):
         return self._observation_spec
 
     # Coding of objects on the board
-    def _update_state(self):
+    def _update_state(self) -> List[List[List[int]]]:
         state = []
         for row in range(self.stan.game_length):
             line = []

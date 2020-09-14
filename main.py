@@ -1,4 +1,3 @@
-# import keyboard
 from Screen import Screen
 from State import State
 import pygame
@@ -28,7 +27,6 @@ def main():
     game_screen = Screen(stan.game_width, stan.game_length) #Initialize game screen
     snake_dead = False
     clock = pygame.time.Clock()
-
 
     while not snake_dead:
         clock.tick(5)
