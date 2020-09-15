@@ -29,18 +29,20 @@ collect_episodes_per_iteration = 32
 num_parallel_environments = 128
 replay_buffer_capacity = 501  # Per-environment
 # Params for train
-num_epochs = 20
+num_epochs = 100
 learning_rate = 4e-4
 # Params for eval
 num_eval_episodes = 3
-eval_interval = 1
+eval_interval = 100
 policy_saver_interval = 1000
 
 
-def eval_path(global_step_val, eval_interval):
-    if not os.path.exists("eval_data"):
-        os.makedirs("eval_data")
-    return os.path.join("eval_data", f'Eval_data.step{global_step_val // eval_interval}.txt')
+def eval_path(saved_model_dir, global_step_val, eval_interval):
+    eval_data_dir = os.path.join(saved_model_dir, "eval_data")
+    if not os.path.exists(eval_data_dir):
+        os.makedirs(eval_data_dir)
+    return os.path.join(eval_data_dir,
+                        f'Eval_data.step{global_step_val // eval_interval}.txt')
 
 
 def evaluate_perf(f, env, policy, num_episodes):
@@ -48,16 +50,18 @@ def evaluate_perf(f, env, policy, num_episodes):
     for episode in range(num_episodes):
         time_step = env.reset()
         state = policy.get_initial_state(env.batch_size)
+        episode_reward = 0
         while not time_step.is_last():
             screen = time_step.observation
             policy_step = policy.action(time_step, state)
             state = policy_step.state
-            total_reward += time_step.reward[0]
+            episode_reward += time_step.reward[0]
             time_step = env.step(policy_step.action)
             print((screen.numpy().tolist(),
                    time_step.reward[0].numpy().tolist(),
-                   total_reward.numpy().tolist()),
+                   episode_reward.numpy().tolist()),
                   file=f)
+        total_reward += episode_reward
     avg_reward = total_reward / num_episodes
     return avg_reward
 
@@ -145,7 +149,7 @@ def main():
 
     train_checkpointer.initialize_or_restore()
     global_step = tf.compat.v1.train.get_global_step()
-
+    print(f"Starting training at step: {global_step.numpy()}")
     while environment_steps_metric.result() < num_environment_steps:
         start_time = time.time()
         collect_driver.run()
@@ -159,8 +163,9 @@ def main():
 
         global_step_val = global_step.numpy()
         if global_step_val % eval_interval == 0:
-            with open(eval_path(global_step_val, eval_interval), 'w') as f:
-                avg_return = evaluate_perf(f, eval_env, agent.policy, eval_interval)
+            with open(eval_path(saved_model_dir, global_step_val, eval_interval), 'w') as f:
+                avg_return = evaluate_perf(f, eval_env, agent.policy,
+                                           num_eval_episodes)
             steps_per_sec = ((global_step_val - timed_at_step) / (collect_time + train_time))
             print(f"step = {global_step_val}: loss = {total_loss}, Avg return: {avg_return}, {steps_per_sec:.3f} steps/sec, collect_time = {collect_time}, train_time = {train_time}")
             timed_at_step = global_step_val

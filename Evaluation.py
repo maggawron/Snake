@@ -1,3 +1,5 @@
+import os
+import sys
 import pygame
 from Screen import Screen
 from State import State
@@ -48,7 +50,7 @@ def display_evaluation_game(input_file):
         for line in fp:
             single_move = eval(line)
             screen, reward_print, total_reward = single_move
-            clock.tick(1)
+            clock.tick(5)
             convert_env_to_state(stan, screen)
             game_screen.display_move(stan)
             text2 = game_screen.myfont.render("Score: {:0.0f} | Step reward: {:0.2f} | Total reward: {:0.1f}"
@@ -58,9 +60,12 @@ def display_evaluation_game(input_file):
 
 
 def main():
-    for i in range(1520, 1521):
-        filepath = rf"C:\Users\ibm\PycharmProjects\Snake\eval_data\Eval_data.step{i}.txt"
-        #filepath = f"eval_data/Eval_data.step{i}.txt"
+    if len(sys.argv) != 2:
+        raise ValueError(f"Usage: ./{sys.argv[0]} experiment_name")
+    experiment_name = sys.argv[1]
+    for i in range(11, 13):
+        filepath = os.path.join("saved_models", experiment_name,
+                                "eval_data", f"Eval_data.step{i}.txt")
         print("Step: ", i)
         display_evaluation_game(filepath)
 
