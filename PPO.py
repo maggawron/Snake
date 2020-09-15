@@ -26,7 +26,7 @@ import Environment
 # Define model hyperparameters
 num_environment_steps = 3 * 10 ** 7
 collect_episodes_per_iteration = 32
-num_parallel_environments = 1
+num_parallel_environments = 128
 replay_buffer_capacity = 501  # Per-environment
 # Params for train
 num_epochs = 20
@@ -34,7 +34,7 @@ learning_rate = 4e-4
 # Params for eval
 num_eval_episodes = 3
 eval_interval = 1
-policy_saver_interval = 2 # 1000
+policy_saver_interval = 1000
 
 
 def eval_path(global_step_val, eval_interval):
