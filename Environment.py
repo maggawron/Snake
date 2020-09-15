@@ -23,6 +23,7 @@ class Environment(py_environment.PyEnvironment):
 
     def _start_new_game(self) -> None:
         self.stan = State()
+        #print("new game")
         # self.stan = copy.deepcopy(Backend.state_const)
         self.state = self._update_state()
         self.episode_ended = False
@@ -32,6 +33,7 @@ class Environment(py_environment.PyEnvironment):
         self.all_moves = []
         self.reward_print: int = 0
         self.total_reward: int = 0
+        self.distance_to_apple = math.sqrt(self.stan.game_length**2 + self.stan.game_width**2)
 
     def _cal_dist_to_apple(self) -> float:
         min_dist = math.sqrt(self.stan.game_length ** 2 + self.stan.game_width ** 2)
@@ -49,6 +51,7 @@ class Environment(py_environment.PyEnvironment):
 
     # Coding of objects on the board
     def _update_state(self) -> List[List[List[int]]]:
+        #print("snake", self.stan.snake_loc)
         state = []
         for row in range(self.stan.game_length):
             line = []
@@ -59,7 +62,8 @@ class Environment(py_environment.PyEnvironment):
                         or row == 0 or col == 0 or row == self.stan.game_length - 1 or col == self.stan.game_width - 1:
                     line.append([0, 1, 0, 0, 0])
                 # TODO make it faster
-                elif (row, col) in self.stan.snake_loc[-1]:
+                elif (row, col) == self.stan.snake_loc[-1]:
+                    #print("head")
                     line.append([0, 0, 1, 0, 0])
                 elif (row, col) in self.stan.snake_loc[:-1]:
                     line.append([0, 0, 0, 1, 0])
@@ -89,7 +93,7 @@ class Environment(py_environment.PyEnvironment):
     def _step(self, action):
         if self.episode_ended:
             return self.reset()
-
+        #print("step")
         key = self._decode_action(action)
         self.stan.move_snake(key)
         self.state = self._update_state()
@@ -106,6 +110,7 @@ class Environment(py_environment.PyEnvironment):
             self.reward_print = -100
             return ts.termination(np.array(self.state, dtype=np.float32), reward=-100)
 
+        self.prev_distance_to_apple = self.distance_to_apple
         self.distance_to_apple = self._cal_dist_to_apple()
         self.action_count += 1
         self.moves_from_last_apple += 1
@@ -114,18 +119,20 @@ class Environment(py_environment.PyEnvironment):
             self.reward_print = 30
             self.stan.ate_apple = False
             return ts.transition(np.array(self.state, dtype=np.float32), reward=30)
-
+        """
         if len(self.all_moves) >= 5 and self.all_moves[-1][0][-1] == self.all_moves[-5][0][-1]:
             self.reward_print = -5
             return ts.transition(np.array(self.state, dtype=np.float32), reward=-5)
         """
-        if self.distance_to_apple >= prev_dist:
-            return ts.transition(np.array(self.state, dtype=np.float32), reward=-self.distance_to_apple / 100)
-        return ts.transition(np.array(self.state, dtype=np.float32), reward=1-self.distance_to_apple/100)
+        if self.distance_to_apple > self.prev_distance_to_apple:
+            self.reward_print = - self.distance_to_apple / 10
+            return ts.transition(np.array(self.state, dtype=np.float32), reward=self.reward_print)
+        self.reward_print = 1 - self.distance_to_apple / 10
+        return ts.transition(np.array(self.state, dtype=np.float32), reward=self.reward_print)
         """
         self.reward_print = -0.005
         return ts.transition(np.array(self.state, dtype=np.float32), reward=-0.005)
-
+        """
     def _alternative_state(self):
         state = []
         head_row, head_col = self.stan.snake_loc[-1]

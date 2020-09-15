@@ -33,30 +33,31 @@ num_epochs = 20
 learning_rate = 4e-4
 # Params for eval
 num_eval_episodes = 3
-eval_interval = 20
+eval_interval = 1
 policy_saver_interval = 2 # 1000
 
 
-def save_to_file(env, global_step_val, eval_interval):
+def eval_path(global_step_val, eval_interval):
     if not os.path.exists("eval_data"):
         os.makedirs("eval_data")
-    path = os.path.join("eval_data", f'Eval_data.step{global_step_val // eval_interval}.txt')
-    with open(path, 'w') as f:
-        for move in env.all_moves:
-            print(str(move), file=f)
-    env.all_moves = []
+    return os.path.join("eval_data", f'Eval_data.step{global_step_val // eval_interval}.txt')
 
 
-def evaluate_perf(env, policy, num_episodes):
+def evaluate_perf(f, env, policy, num_episodes):
     total_reward = 0
     for episode in range(num_episodes):
         time_step = env.reset()
         state = policy.get_initial_state(env.batch_size)
         while not time_step.is_last():
-            policy_step: PolicyStep = policy.action(time_step, state)
+            screen = time_step.observation
+            policy_step = policy.action(time_step, state)
             state = policy_step.state
             total_reward += time_step.reward[0]
             time_step = env.step(policy_step.action)
+            print((screen.numpy().tolist(),
+                   time_step.reward[0].numpy().tolist(),
+                   total_reward.numpy().tolist()),
+                  file=f)
     avg_reward = total_reward / num_episodes
     return avg_reward
 
@@ -158,8 +159,8 @@ def main():
 
         global_step_val = global_step.numpy()
         if global_step_val % eval_interval == 0:
-            avg_return = evaluate_perf(eval_env, agent.policy, num_eval_episodes)
-            save_to_file(eval_py_env, global_step_val, eval_interval)
+            with open(eval_path(global_step_val, eval_interval), 'w') as f:
+                avg_return = evaluate_perf(f, eval_env, agent.policy, eval_interval)
             steps_per_sec = ((global_step_val - timed_at_step) / (collect_time + train_time))
             print(f"step = {global_step_val}: loss = {total_loss}, Avg return: {avg_return}, {steps_per_sec:.3f} steps/sec, collect_time = {collect_time}, train_time = {train_time}")
             timed_at_step = global_step_val

@@ -25,7 +25,7 @@ class Screen:
         self._draw(stan)
         self.game_display.blit(self.surface, (0, 0))
 
-    def _draw_object(self, obj, color):
+    def draw_object(self, obj, color):
         r = pygame.Rect((obj[1] * self.gridsize, obj[0] * self.gridsize), (self.gridsize, self.gridsize))
         pygame.draw.rect(self.surface, color, r)
         pygame.draw.rect(self.surface, Screen.grid1_color, r, 1)
@@ -33,20 +33,20 @@ class Screen:
     
     def _draw(self, state):
         for p in state.snake_loc[:-1]:
-            self._draw_object(p, Screen.snake_color)
+            self.draw_object(p, Screen.snake_color)
         head = state.snake_loc[-1]
-        self._draw_object(head, Screen.head_color)
+        self.draw_object(head, Screen.head_color)
     
         for l in state.apple_loc:
-            self._draw_object(l, Screen.apple_color)
+            self.draw_object(l, Screen.apple_color)
     
         for o in state.obstacle_loc:
-            self._draw_object(Screen.obstacle_color)
+            self.draw_object(o, Screen.obstacle_color)
     
         for row in range(int(self.game_width)):
             for col in range(int(self.game_length)):
                 if row == 0 or row == self.game_width - 1 or col == 0 or col == self.game_length - 1:
-                    self._draw_object((col, row), Screen.obstacle_color)
+                    self.draw_object((col, row), Screen.obstacle_color)
     
     
     def _drawGrid(self):
