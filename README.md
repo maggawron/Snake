@@ -14,6 +14,7 @@ I had to do couple of tricks in order to train faster:
   This helps a lot especially on the beginning of training, as snake makes random moves.
 2. Add a penalty when snake moves in a circle - many times the agent moves in 2x2 circle by performing the same action (move left or right).
 It might be because the agent is penalized highly (-100 points) for hitting the wall so it tries to stay alive (although every move is penalized by -0.05).
+
 ![](snake_loop.gif)
 
 3. Stop the game if the agent did not eat any apple in last 50 moves.  This make it sample more interesting games.
