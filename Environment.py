@@ -119,15 +119,15 @@ class Environment(py_environment.PyEnvironment):
             self.reward_print = 30
             self.stan.ate_apple = False
             return ts.transition(np.array(self.state, dtype=np.float32), reward=30)
-        """
+
         if len(self.all_moves) >= 5 and self.all_moves[-1][0][-1] == self.all_moves[-5][0][-1]:
             self.reward_print = -5
             return ts.transition(np.array(self.state, dtype=np.float32), reward=-5)
-        """
-        if self.distance_to_apple > self.prev_distance_to_apple:
-            self.reward_print = - self.distance_to_apple / 10
-            return ts.transition(np.array(self.state, dtype=np.float32), reward=self.reward_print)
-        self.reward_print = 1 - self.distance_to_apple / 10
+
+        #if self.distance_to_apple > self.prev_distance_to_apple:
+        #    self.reward_print = - self.distance_to_apple / 10
+        #    return ts.transition(np.array(self.state, dtype=np.float32), reward=self.reward_print)
+        self.reward_print = -0.05 #1 - self.distance_to_apple / 10
         return ts.transition(np.array(self.state, dtype=np.float32), reward=self.reward_print)
         """
         self.reward_print = -0.005

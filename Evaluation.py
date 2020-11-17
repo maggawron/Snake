@@ -60,10 +60,15 @@ def display_evaluation_game(input_file):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise ValueError(f"Usage: ./{sys.argv[0]} experiment_name")
+    if len(sys.argv) <= 2:
+        raise ValueError(f"Usage: ./{sys.argv[0]} experiment_name [start end]")
     experiment_name = sys.argv[1]
-    for i in range(11, 13):
+    start = 1
+    end = 10
+    if len(sys.argv) == 4:
+        start = int(sys.argv[2])
+        end = int(sys.argv[3])
+    for i in range(start, end):
         filepath = os.path.join("saved_models", experiment_name,
                                 "eval_data", f"Eval_data.step{i}.txt")
         print("Step: ", i)

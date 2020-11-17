@@ -42,7 +42,7 @@ class State:
         self.game_width = 25
         self.game_length = 25
         obs_number = 0
-        apple_number = 1  # TODO
+        apple_number = 40  # TODO
         self.prev_key = "right"
         self.obstacle_loc = _generate_obstacle(self.game_width, self.game_length, obs_number)
         #self.snake_loc = _generate_first_snake(self.obstacle_loc, self.game_width, self.game_length)
